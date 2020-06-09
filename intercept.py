@@ -58,7 +58,7 @@ class ODNSLocalProxy(BaseResolver):
                         RR(entry["name"], QTYPE[entry["type"]], rdata=answer))
                     logging.debug("{} -> {}".format(qname, answer))
             except Exception as ex:
-                logging.debug(f"Problem in the DOH resolution : {ex}")
+                logging.debug("Problem in the DOH resolution : {}".format(ex))
                 reply.header.rcode = getattr(RCODE, 'NXDOMAIN')
 
         # Else, just forward
@@ -103,7 +103,7 @@ if __name__ == '__main__':
                    help="Local proxy listen address (default:all)")
     p.add_argument("--upstream", "-u", default=DOH_SERVER,
                    metavar="<dns server:port>",
-                   help=f"Upstream DoH server (default:{DOH_SERVER})")
+                   help="Upstream DoH server (default:{})".format(DOH_SERVER))
     p.add_argument("--skip", "-s", action="append",
                    metavar="<label>",
                    help="Don't intercept matching label (glob)")
