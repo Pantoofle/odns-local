@@ -56,7 +56,7 @@ class ODNSLocalProxy(BaseResolver):
                     answer = self.crypto.decrypt_answer(entry["data"], aes_key)
                     reply.add_answer(
                         RR(entry["name"], QTYPE[entry["type"]], rdata=answer))
-                    logging.debug(f"{qname} -> {answer}")
+                    logging.debug("{} -> {}".format(qname, answer))
             except Exception as ex:
                 logging.debug(f"Problem in the DOH resolution : {ex}")
                 reply.header.rcode = getattr(RCODE, 'NXDOMAIN')
@@ -82,7 +82,7 @@ class ODNSLocalProxy(BaseResolver):
         """
 
         # Send the request
-        addr = f"https://{server}{path}?name={name}&type={type}"
+        addr = "https://{}{}?name={}&type={}".format(server, path, name, type)
         req = Request(addr, headers={"Accept": "application/dns-json"})
         # Parse the answer
         content = urlopen(req).read().decode()
@@ -120,7 +120,7 @@ if __name__ == '__main__':
                               args.skip or [])
     logger = DNSLogger(args.log, args.log_prefix)
 
-    print("Starting ODNS Local Poxy (%s:%d -> %s)" % (
+    print("Starting ODNS Local Poxy ({}:{} -> {})".format(
         args.address or "*", args.port,
         args.upstream))
 
