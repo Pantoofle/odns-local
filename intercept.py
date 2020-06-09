@@ -141,13 +141,5 @@ if __name__ == '__main__':
                            logger=logger)
     udp_server.start_thread()
 
-    if args.tcp:
-        tcp_server = DNSServer(resolver,
-                               port=args.port,
-                               address=args.address,
-                               tcp=True,
-                               logger=logger)
-        tcp_server.start_thread()
-
     while udp_server.isAlive():
         time.sleep(1)
