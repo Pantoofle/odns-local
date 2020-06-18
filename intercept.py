@@ -6,10 +6,6 @@ from dnslib.server import DNSServer, DNSHandler, BaseResolver, DNSLogger
 from odns import ODNSCypher
 from urllib.request import Request, urlopen
 
-import logging
-logging.basicConfig(level=logging.DEBUG,
-                    format='%(asctime)s - %(levelname)s - %(message)s')
-
 ODNS_SUFFIX = ".odns"
 DOH_SERVER = "cloudflare-dns.com"
 
@@ -36,17 +32,19 @@ class ODNSLocalProxy(BaseResolver):
         reply = request.reply()
         qname = request.q.qname
         qtype = request.q.qtype
-        logging.debug("QNAME : ", qname)
+        print("QNAME : ", qname)
 
         # Test if we skip the request
         if not any([qname.matchGlob(s) for s in self.skip]):
             # Cypher the query
-            query = bytes(qname, encoding="utf-8")
+            query = bytes(str(qname), encoding="utf-8")
+            print("query: ", query)
+            print("pk: ", self.server_pk)
             encrypted, aes_key = self.crypto.encrypt_query(
                 query, self.server_pk)
 
             new_qname = encrypted.hex() + ODNS_SUFFIX
-            logging.debug("Encrypted : ", new_qname)
+            print("Encrypted : ", new_qname)
 
             # Forward it to the upstream server
             try:
@@ -56,14 +54,14 @@ class ODNSLocalProxy(BaseResolver):
                     answer = self.crypto.decrypt_answer(entry["data"], aes_key)
                     reply.add_answer(
                         RR(entry["name"], QTYPE[entry["type"]], rdata=answer))
-                    logging.debug("{} -> {}".format(qname, answer))
+                    print("{} -> {}".format(qname, answer))
             except Exception as ex:
-                logging.debug("Problem in the DOH resolution : {}".format(ex))
+                print("Problem in the DOH resolution : {}".format(ex))
                 reply.header.rcode = getattr(RCODE, 'NXDOMAIN')
 
         # Else, just forward
         if not reply.rr:
-            logging.debug("Query forwarded")
+            print("Query forwarded")
             try:
                 json = query(new_qname, type=qtype, server=self.upstream)
                 for entry in json["Answer"]:

@@ -13,7 +13,7 @@ class ODNSCypher():
     def __init__(self):
         pass
 
-    def encrypt_query(query: bytes, server_pk: Union[str, bytes]):
+    def encrypt_query(self, query: bytes, server_pk: Union[str, bytes]):
         """
             Encrypt the query to send to the server
 
@@ -38,7 +38,7 @@ class ODNSCypher():
         # Return the message and the symetric key
         return ephemeral_key.public_key.format(False) + cipher_text, aes_key
 
-    def decrypt_query(query: bytes, server_sk: Union[str, bytes]):
+    def decrypt_query(self, query: bytes, server_sk: Union[str, bytes]):
         """
             Decrypts a query received by the server
 
@@ -62,8 +62,8 @@ class ODNSCypher():
         aes_key = decapsulate(ephemeral_public_key, private_key)
         return aes_decrypt(aes_key, encrypted), aes_key
 
-    def encrypt_answer(answer: bytes, aes_key: bytes):
+    def encrypt_answer(self, answer: bytes, aes_key: bytes):
         return aes_encrypt(aes_key, answer)
 
-    def decrypt_answer(answer: bytes, aes_key: bytes):
+    def decrypt_answer(self, answer: bytes, aes_key: bytes):
         return aes_decrypt(aes_key, answer)
