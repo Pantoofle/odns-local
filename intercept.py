@@ -18,15 +18,20 @@ class ODNSLocalProxy(BaseResolver):
         Cyphers all requests received and forwards them to a recursive resolver
     """
 
-    def __init__(self, upstream, skip):
+    def __init__(self, upstream, skip, key_path=None):
         """
             upstream        - upstream DoH server
             skip            - list of wildcard labels to skip
         """
         self.upstream = upstream
         self.skip = skip
-        self.crypto = ODNSCypher()
-        self.server_pk = None
+
+        server_pk = None
+        if key_path is not None:
+            with open(key_path, 'rb') as f:
+                server_pk = f.read()
+
+        self.crypto = ODNSCypher(server_pk=server_pk)
 
     def resolve(self, request, handler):
         reply = request.reply()
@@ -38,10 +43,7 @@ class ODNSLocalProxy(BaseResolver):
         if not any([qname.matchGlob(s) for s in self.skip]):
             # Cypher the query
             query = bytes(str(qname), encoding="utf-8")
-            print("query: ", query)
-            print("pk: ", self.server_pk)
-            encrypted, aes_key = self.crypto.encrypt_query(
-                query, self.server_pk)
+            encrypted, aes_key = self.crypto.encrypt_query(query)
 
             new_qname = encrypted.hex() + ODNS_SUFFIX
             print("Encrypted : ", new_qname)
@@ -102,6 +104,9 @@ if __name__ == '__main__':
     p.add_argument("--upstream", "-u", default=DOH_SERVER,
                    metavar="<dns server:port>",
                    help="Upstream DoH server (default:{})".format(DOH_SERVER))
+    p.add_argument("--key", "-k", default="./key.pem",
+                   metavar="<key_path>",
+                   help="Path to the server public key")
     p.add_argument("--skip", "-s", action="append",
                    metavar="<label>",
                    help="Don't intercept matching label (glob)")
