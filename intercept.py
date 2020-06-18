@@ -28,9 +28,9 @@ class ODNSLocalProxy(BaseResolver):
 
         server_pk = None
         if key_path is not None:
-            with open(key_path, 'rb') as f:
-                server_pk = f.read()
-
+            with open(key_path, 'r') as f:
+                server_pk = f.readline()[:-1]
+        print(server_pk)
         self.crypto = ODNSCypher(server_pk=server_pk)
 
     def resolve(self, request, handler):
@@ -120,7 +120,8 @@ if __name__ == '__main__':
     args.dns_port = int(args.dns_port or 53)
 
     resolver = ODNSLocalProxy(args.upstream,
-                              args.skip or [])
+                              args.skip or [],
+                              key_path=args.key)
     logger = DNSLogger(args.log, args.log_prefix)
 
     print("Starting ODNS Local Poxy ({}:{} -> {})".format(
