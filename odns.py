@@ -14,6 +14,7 @@ class ODNSCypher():
             self.server_sk = PrivateKey.from_pem(server_sk)
 
         self.server_sk = server_sk
+        self.server_pk = None
 
         if server_pk is not None:
             if isinstance(server_pk, str):
@@ -22,8 +23,6 @@ class ODNSCypher():
                 self.server_pk = PublicKey(server_pk)
             else:
                 raise TypeError("Invalid public key type")
-
-        self.server_pk = server_pk
 
     def encrypt_query(self, query: bytes):
         """
@@ -35,6 +34,8 @@ class ODNSCypher():
         ephemeral_key = generate_key()
 
         # Generate the symetric key
+        print("Ephemeral: ", type(ephemeral_key))
+        print("Server PK: ", type(self.server_pk))
         aes_key = encapsulate(ephemeral_key, self.server_pk)
         # Encrypt the query (this adds the nonce)
         cipher_text = aes_encrypt(aes_key, query)

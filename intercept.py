@@ -33,6 +33,19 @@ class ODNSLocalProxy(BaseResolver):
         print(server_pk)
         self.crypto = ODNSCypher(server_pk=server_pk)
 
+    def query(self, name, type='A', server=DOH_SERVER, path="/dns-query"):
+        """
+        Queries the server through the JSON interface
+        Ref : https://developers.cloudflare.com/1.1.1.1/dns-over-https/json-format/
+        """
+
+        # Send the request
+        addr = "https://{}{}?name={}&type={}".format(server, path, name, type)
+        req = Request(addr, headers={"Accept": "application/dns-json"})
+        # Parse the answer
+        content = urlopen(req).read().decode()
+        return json.loads(content)
+
     def resolve(self, request, handler):
         reply = request.reply()
         qname = request.q.qname
@@ -42,15 +55,15 @@ class ODNSLocalProxy(BaseResolver):
         # Test if we skip the request
         if not any([qname.matchGlob(s) for s in self.skip]):
             # Cypher the query
-            query = bytes(str(qname), encoding="utf-8")
-            encrypted, aes_key = self.crypto.encrypt_query(query)
+            query_content = bytes(str(qname), encoding="utf-8")
+            encrypted, aes_key = self.crypto.encrypt_query(query_content)
 
             new_qname = encrypted.hex() + ODNS_SUFFIX
             print("Encrypted : ", new_qname)
 
             # Forward it to the upstream server
             try:
-                json = query(new_qname, type=qtype, server=self.upstream)
+                json = self.query(new_qname, type=qtype, server=self.upstream)
                 for entry in json["Answer"]:
                     # Decypher the reply
                     answer = self.crypto.decrypt_answer(entry["data"], aes_key)
@@ -65,7 +78,7 @@ class ODNSLocalProxy(BaseResolver):
         if not reply.rr:
             print("Query forwarded")
             try:
-                json = query(new_qname, type=qtype, server=self.upstream)
+                json = self.query(new_qname, type=qtype, server=self.upstream)
                 for entry in json["Answer"]:
                     # Decypher the reply
                     reply.add_answer(
@@ -74,19 +87,6 @@ class ODNSLocalProxy(BaseResolver):
                 reply.header.rcode = getattr(RCODE, 'NXDOMAIN')
 
         return reply
-
-    def query(name, type='A', server=DOH_SERVER, path="/dns-query"):
-        """
-        Queries the server through the JSON interface
-        Ref : https://developers.cloudflare.com/1.1.1.1/dns-over-https/json-format/
-        """
-
-        # Send the request
-        addr = "https://{}{}?name={}&type={}".format(server, path, name, type)
-        req = Request(addr, headers={"Accept": "application/dns-json"})
-        # Parse the answer
-        content = urlopen(req).read().decode()
-        return json.loads(content)
 
 
 if __name__ == '__main__':
